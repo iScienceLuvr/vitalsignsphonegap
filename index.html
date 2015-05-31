@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-<link href="css/bootstrap.css" rel="stylesheet"">
+<link href="css/bootstrap.css" rel="stylesheet">
 <style>
 #container {
 margin: 0px auto;
@@ -13,44 +13,44 @@ width: 500px;
 height: 375px;
 background-color: #666;
 }
+#histogram {
+	line-height: 1px;
+}
+#histogram * {
+	line-height: 1px;
+	margin: 0;
+	padding: 0;
+}
 </style>
 </head>
 <body>
-
 <button class="btn" onclick="show();">Record!</button>
-
-
 <div id="record" style="display:none; text-align:center;">
 <div id="container">
-<video autoplay="false" id="videoElement">
+<video autoplay="false" muted="muted" id="videoElement">
 </video>
 </div>
 <button id="play" class="btn" onclick="play()">Start Recording!</button>
 </div>
-
-
-
 <script src="http://code.jquery.com/jquery.js"></script>
 <script src="js/bootstrap.js"></script>
+<canvas height="100" width="100" id="histogram"></canvas>
+<canvas height="120" width="200" id="vcanvas"></canvas>
 <script>
-
+var frame = 0;
+var intervalMeasurer;
 var video = document.querySelector("#videoElement");
-
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||    navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
-
 if (navigator.getUserMedia) {       
 navigator.getUserMedia({video: true, audio: true}, handleVideo, videoError);
 }
-
 function handleVideo(stream) {
 video.src = window.URL.createObjectURL(stream);
 document.getElementById("videoElement").pause();
 }
-
 function videoError(e) {
 alert("There was an error with the video stream.\nCheck that your webcam is connected.");
 }
-
 function play()
 {
 var video = document.getElementById("videoElement");
@@ -58,12 +58,39 @@ var video = document.getElementById("videoElement");
    if (video.paused) {
       video.play();
       button.textContent = "Stop Recording";
+      intervalMeasurer = setInterval("measureBrightness()", 10);
    } else {
+   	  clearInterval(intervalMeasurer);
       video.pause();
       button.textContent = "Continue Recording";
    }
 }
-
+function measureBrightness() {
+	var vcanvas = document.getElementById("vcanvas");
+	vcanvas.width = 200;
+	vcanvas.height = 120;
+	var ctxv = vcanvas.getContext('2d')
+	ctxv.drawImage(document.getElementById('videoElement'), 0, 0, 200, 120);
+	var ctx = document.getElementById("histogram").getContext('2d');
+	//console.log(averageColor(vcanvas));
+	ctx.fillStyle = averageColor(vcanvas);
+	ctx.fillRect(frame % 100, Math.floor(frame / 100), 1, 1);
+	frame++;
+}
+function averageColor(canvas) {
+	var r = 0, g = 0, b = 0;
+	var ctx = canvas.getContext("2d");
+	var image = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+	for (i = 0; i < image.length; i+= 4) {
+		r += image[i];
+		g += image[i + 1];
+		b += image[i + 2];
+	}
+	r = r / (image.length / 4);
+	g = g / (image.length / 4);
+	b = b / (image.length / 4);
+	return "rgba(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ", 255)";
+}
 function show()
 {
 document.getElementById("record").style.display="block";
